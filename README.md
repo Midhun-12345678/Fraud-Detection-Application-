@@ -6,8 +6,7 @@ A production-ready machine learning API for real-time credit card fraud detectio
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.128.0-009688.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-🚀 **Live Demo:** [https://fraud-detection.onrender.com/docs](https://fraud-detection.onrender.com/docs)
-
+🚀 **Live Demo:** [https://fraud-detection-api-q410.onrender.com/docs](https://fraud-detection-api-q410.onrender.com/docs)
 ---
 
 ## 📊 Overview
