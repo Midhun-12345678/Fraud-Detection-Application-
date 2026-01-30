@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💳 Fraud Detection API</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 40px; }
+        .section { margin-bottom: 30px; }
+        .section h2 { color: #333; margin-bottom: 15px; font-size: 1.5em; }
+        .example-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; transform: translateY(-2px); }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; transform: translateY(-2px); }
+        .btn-secondary { background: #6b7280; color: white; }
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            min-height: 100px;
+        }
+        .result {
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .result.success { background: #d1fae5; border: 2px solid #10b981; }
+        .result.danger { background: #fee2e2; border: 2px solid #ef4444; }
+        .result h3 { margin-bottom: 10px; font-size: 1.3em; }
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .result-item { background: white; padding: 15px; border-radius: 8px; }
+        .result-item label { display: block; font-size: 0.85em; color: #6b7280; margin-bottom: 5px; }
+        .result-item .value { font-size: 1.5em; font-weight: bold; color: #111827; }
+        .loading { text-align: center; padding: 20px; display: none; }
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info-box {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .footer {
+            background: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+        .footer a { color: #667eea; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 Fraud Detection API</h1>
+            <p>Real-time credit card fraud detection using Machine Learning</p>
+        </div>
+        <div class="content">
+            <div class="section">
+                <h2>🎯 Quick Test</h2>
+                <p style="color: #6b7280; margin-bottom: 15px;">Click a button to test with example data:</p>
+                <div class="example-buttons">
+                    <button class="btn btn-success" onclick="loadExample('normal')">✅ Normal Transaction</button>
+                    <button class="btn btn-danger" onclick="loadExample('fraud')">⚠️ Fraudulent Transaction</button>
+                    <button class="btn btn-secondary" onclick="clearInput()">🔄 Clear</button>
+                </div>
+            </div>
+            <div class="section">
+                <h2>📊 Transaction Features</h2>
+                <div class="info-box">
+                    <p><strong>Note:</strong> This API uses 30 PCA-transformed features from credit card transactions.</p>
+                    <p>Paste your feature array below (comma-separated) or use the example buttons above.</p>
+                </div>
+                <textarea id="features" placeholder="Example: -1.36, -0.07, 2.54, ..."></textarea>
+            </div>
+            <div class="section">
+                <button class="btn btn-primary" onclick="predictFraud()" style="width: 100%; font-size: 1.1em;">🔍 Detect Fraud</button>
+            </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing transaction...</p>
+            </div>
+            <div class="result" id="result"></div>
+        </div>
+        <div class="footer">
+            <p>Built with FastAPI + XGBoost | <a href="/docs" target="_blank">API Documentation</a></p>
+            <p style="margin-top: 10px;"><a href="https://github.com/Midhun-12345678/Fraud-Detection-Application-" target="_blank">View on GitHub</a></p>
+        </div>
+    </div>
+    <script>
+        const examples = {
+                fraud: [406.0, -2.3122265423263, 1.95199201064158, -1.60985073229769, 3.9979055875468, -0.522187864667764, -1.42654531920595, -2.53738730624579, 1.39165724829804, -2.77008927719433, -2.77227214465915, 3.20203320709635, -2.89990738849473, -0.595221881324605, -4.28925378244217, 0.389724120274487, -1.14074717980657, -2.83005567450437, -0.0168224681808257, 0.416955705037907, 0.126910559061474, 0.517232370861764, -0.0350493686052974, -0.465211076182388, 0.320198198514526, 0.0445191674731724, 0.177839798284401, 0.261145002567677, -0.143275874698919, 0.0],
+
+            normal: [0.0, -1.3598071336738, -0.0727811733098497, 2.53634673796914, 1.37815522427443, -0.338320769942518, 0.462387777762292, 0.239598554061257, 0.0986979012610507, 0.363786969611213, 0.0907941719789316, -0.551599533260813, -0.617800855762348, -0.991389847235408, -0.311169353699879, 1.46817697209427, -0.470400525259478, 0.207971241929242, 0.0257905801985591, 0.403992960255733, 0.251412098239705, -0.018306777944153, 0.277837575558899, -0.110473910188767, 0.0669280749146731, 0.128539358273528, -0.189114843888824, 0.133558376740387, -0.0210530534538215, 149.62]
+        };
+        function loadExample(type) {
+            document.getElementById('features').value = examples[type].join(', ');
+            document.getElementById('result').style.display = 'none';
+        }
+        function clearInput() {
+            document.getElementById('features').value = '';
+            document.getElementById('result').style.display = 'none';
+        }
+        async function predictFraud() {
+            const featuresText = document.getElementById('features').value.trim();
+            if (!featuresText) { alert('Please enter transaction features or click an example button!'); return; }
+            const features = featuresText.split(',').map(f => parseFloat(f.trim()));
+            if (features.length !== 30) { alert(`Expected 30 features, got ${features.length}.`); return; }
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            try {
+                const response = await fetch('/predict-json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ features })
+                });
+                const data = await response.json();
+                document.getElementById('loading').style.display = 'none';
+                displayResult(data);
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert('Error: ' + error.message);
+            }
+        }
+        function displayResult(data) {
+            const resultDiv = document.getElementById('result');
+            const isFraud = data.is_fraud;
+            resultDiv.className = 'result ' + (isFraud ? 'danger' : 'success');
+            const emoji = isFraud ? '⚠️' : '✅';
+            const status = isFraud ? 'FRAUDULENT TRANSACTION DETECTED!' : 'Transaction Appears Legitimate';
+            const statusColor = isFraud ? '#dc2626' : '#10b981';
+            resultDiv.innerHTML = `
+                <h3 style="color: ${statusColor}">${emoji} ${status}</h3>
+                <div class="result-details">
+                    <div class="result-item"><label>Fraud Probability</label><div class="value">${(data.fraud_probability * 100).toFixed(4)}%</div></div>
+                    <div class="result-item"><label>Fraud Score</label><div class="value">${data.fraud_score}/100</div></div>
+                    <div class="result-item"><label>Classification</label><div class="value">${data.prediction === 1 ? 'Fraud' : 'Normal'}</div></div>
+                </div>
+                ${isFraud ? '<p style="margin-top: 15px; color: #dc2626;"><strong>Action Required:</strong> Flag for manual review.</p>' : '<p style="margin-top: 15px; color: #10b981;"><strong>Status:</strong> Transaction can proceed normally.</p>'}
+            `;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

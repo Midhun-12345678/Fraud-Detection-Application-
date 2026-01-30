@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Form, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import joblib
 import numpy as np
@@ -10,6 +12,10 @@ from .dashboard import router
 
 app = FastAPI()
 
+# Mount static files
+static_path = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+
 # Register dashboard routes
 app.include_router(router)
 
@@ -20,6 +26,11 @@ model = joblib.load(model_path)
 
 class TransactionFeatures(BaseModel):
     features: list[float]
+
+# Serve index.html at root
+@app.get("/", response_class=FileResponse)
+def read_root():
+    return os.path.join(static_path, "index.html")
 
 @app.post("/predict")
 async def predict(features: str = Form(...)):
@@ -77,7 +88,3 @@ async def predict_json(data: TransactionFeatures):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/")
-def read_root():
-    return {"message": "Fraud Detection API is running"}
