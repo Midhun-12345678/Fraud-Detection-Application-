@@ -1,5 +1,12 @@
 from fastapi import APIRouter
 from .database import cursor
+import sys
+import os
+
+# Add project root to path for drift imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from drift.drift_detector import run_drift_check, get_drift_history
+from retrain.retrain_pipeline import run_retraining_pipeline, get_retrain_history, get_current_metrics
 
 router = APIRouter()
 
@@ -34,3 +41,36 @@ def history():
         }
         for r in rows
     ]
+
+@router.get("/drift")
+def check_drift():
+    """Run drift detection on current vs reference data."""
+    result = run_drift_check("data/creditcard.csv", "data/fraud.db")
+    return result
+
+@router.get("/drift/history")
+def drift_history():
+    """Get last 20 drift check results."""
+    return get_drift_history()
+
+@router.post("/retrain")
+def trigger_retrain():
+    """Trigger model retraining pipeline."""
+    result = run_retraining_pipeline("data/creditcard.csv", "fraud_model.pkl")
+    
+    # Reload model if promoted
+    if result.get("status") == "promoted":
+        from .app import reload_model
+        reload_model()
+    
+    return result
+
+@router.get("/retrain/status")
+def retrain_status():
+    """Get retraining history."""
+    return get_retrain_history()
+
+@router.get("/retrain/current-metrics")
+def current_metrics():
+    """Get current model metrics."""
+    return get_current_metrics("data/creditcard.csv", "fraud_model.pkl", sample_size=5000)

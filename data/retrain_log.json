@@ -1,0 +1,24 @@
+[
+  {
+    "status": "rejected",
+    "reason": "Data drift detected: 50.00% > 30% threshold",
+    "timestamp": "2026-03-11T13:17:21.723594",
+    "current_metrics": {
+      "accuracy": 0.9999,
+      "precision": 1.0,
+      "recall": 0.9375,
+      "f1": 0.967741935483871,
+      "roc_auc": 0.9999686999198718
+    },
+    "new_metrics": {
+      "accuracy": 0.9991748885221726,
+      "precision": 0.717948717948718,
+      "recall": 0.8571428571428571,
+      "f1": 0.7813953488372093,
+      "roc_auc": 0.9849129824974446
+    },
+    "drift_score": 0.5,
+    "promoted": false,
+    "training_duration_seconds": 19.70697259902954
+  }
+]
