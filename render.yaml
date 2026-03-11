@@ -11,3 +11,31 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
+
+  - type: web
+    name: fraud-detection-dashboard
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: API_BASE_URL
+        value: https://fraud-detection-api-q410.onrender.com
+
+  - type: web
+    name: fraud-detection-dashboard
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: API_BASE_URL
+        value: https://fraud-detection-api-q410.onrender.com

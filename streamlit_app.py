@@ -5,6 +5,7 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import os
 
 # Page configuration
 st.set_page_config(
@@ -152,8 +153,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# API Base URL
-API_BASE = "http://localhost:8000"
+# API Base URL - uses environment variable on Render, localhost for local dev
+API_BASE = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 # Hardcoded examples
 FRAUD_EXAMPLE = [406.0, -2.3122265423263, 1.95199201064158, -1.60985073229769, 3.9979055875468,
