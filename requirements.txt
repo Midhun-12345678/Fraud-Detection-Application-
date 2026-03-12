@@ -16,7 +16,7 @@ shap
 # Visualization & Dashboard
 streamlit
 plotly
-altair<6
+altair==5.3.0
 
 # Drift Detection
 evidently==0.4.30
