@@ -6,7 +6,7 @@ python-multipart==0.0.22
 
 # Data Processing & ML
 numpy==2.1.0
-pandas
+pandas==3.0.0
 scikit-learn==1.8.0
 xgboost==3.1.3
 imbalanced-learn==0.14.1
@@ -15,7 +15,7 @@ shap
 
 # Visualization & Dashboard
 streamlit
-plotly==6.1.0
+plotly
 
 # Drift Detection
 evidently==0.4.30
