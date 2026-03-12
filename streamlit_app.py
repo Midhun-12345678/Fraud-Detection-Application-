@@ -420,6 +420,14 @@ with tab2:
                             st.markdown("🔴 **Red bars** = Increases fraud probability | 🔵 **Blue bars** = Decreases fraud probability")
                         else:
                             st.info("SHAP data not available - showing prediction result only")
+                        
+                        # Dashboard link button
+                        st.divider()
+                        st.link_button(
+                            "📊 View API Dashboard",
+                            f"{API_BASE}/",
+                            use_container_width=True
+                        )
                     else:
                         st.warning("API returned no data. Check if the server is running.")
                         
