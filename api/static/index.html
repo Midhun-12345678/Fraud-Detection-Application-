@@ -3,200 +3,869 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💳 Fraud Detection API</title>
+    <title>�️ Fraud Detection Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
+        :root {
+            --bg-primary: #0e1117;
+            --bg-secondary: #1e2130;
+            --bg-tertiary: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-blue: #63b3ed;
+            --accent-green: #48bb78;
+            --accent-red: #fc8181;
+            --accent-yellow: #f6ad55;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
+            background: var(--bg-secondary);
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--bg-tertiary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: var(--accent-blue); font-size: 1.8em; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+        .status-dot.error { background: var(--accent-red); animation: none; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .last-update { font-size: 0.85em; color: var(--text-secondary); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px 40px; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            background: var(--bg-secondary);
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .tab:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .tab.active { background: var(--bg-tertiary); color: var(--text-primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 20px;
             text-align: center;
         }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .header p { font-size: 1.1em; opacity: 0.9; }
-        .content { padding: 40px; }
-        .section { margin-bottom: 30px; }
-        .section h2 { color: #333; margin-bottom: 15px; font-size: 1.5em; }
-        .example-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .metric-card label {
+            display: block;
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .metric-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+        .metric-card .delta {
+            font-size: 0.85em;
+            color: var(--accent-green);
+            margin-top: 5px;
+        }
+        
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .chart-card h3 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        /* Buttons */
         .btn {
             padding: 12px 24px;
             border: none;
             border-radius: 8px;
             font-size: 1em;
             cursor: pointer;
-            transition: all 0.3s;
             font-weight: 600;
+            transition: all 0.3s;
         }
-        .btn-primary { background: #667eea; color: white; }
-        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
-        .btn-success { background: #10b981; color: white; }
-        .btn-success:hover { background: #059669; transform: translateY(-2px); }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; transform: translateY(-2px); }
-        .btn-secondary { background: #6b7280; color: white; }
+        .btn-primary { background: #3182ce; color: white; }
+        .btn-primary:hover { background: #2c5282; transform: translateY(-2px); }
+        .btn-success { background: var(--accent-green); color: white; }
+        .btn-success:hover { background: #38a169; }
+        .btn-danger { background: var(--accent-red); color: white; }
+        .btn-danger:hover { background: #e53e3e; }
+        .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Input */
         textarea {
             width: 100%;
             padding: 15px;
-            border: 2px solid #e5e7eb;
+            border: 1px solid var(--bg-tertiary);
             border-radius: 8px;
-            font-size: 0.9em;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             font-family: 'Courier New', monospace;
+            font-size: 0.9em;
             resize: vertical;
             min-height: 100px;
         }
-        .result {
+        textarea:focus { outline: none; border-color: var(--accent-blue); }
+        
+        /* Example Buttons */
+        .example-buttons { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        
+        /* Results */
+        .result-box {
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-top: 20px;
+        }
+        .result-box.success { background: rgba(72, 187, 120, 0.2); border: 2px solid var(--accent-green); }
+        .result-box.danger { background: rgba(252, 129, 129, 0.2); border: 2px solid var(--accent-red); }
+        .result-box h3 { margin-bottom: 15px; }
+        
+        /* Loading */
+        .loading {
             display: none;
+            text-align: center;
+            padding: 40px;
         }
-        .result.success { background: #d1fae5; border: 2px solid #10b981; }
-        .result.danger { background: #fee2e2; border: 2px solid #ef4444; }
-        .result h3 { margin-bottom: 10px; font-size: 1.3em; }
-        .result-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .result-item { background: white; padding: 15px; border-radius: 8px; }
-        .result-item label { display: block; font-size: 0.85em; color: #6b7280; margin-bottom: 5px; }
-        .result-item .value { font-size: 1.5em; font-weight: bold; color: #111827; }
-        .loading { text-align: center; padding: 20px; display: none; }
         .spinner {
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
             width: 40px;
             height: 40px;
+            border: 4px solid var(--bg-tertiary);
+            border-top: 4px solid var(--accent-blue);
+            border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 15px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        /* Section */
+        .section { margin-bottom: 30px; }
+        .section h2 { color: var(--text-primary); margin-bottom: 15px; }
+        .section p { color: var(--text-secondary); margin-bottom: 15px; }
+        
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
         }
-        .info-box {
-            background: #f0f9ff;
-            border-left: 4px solid #3b82f6;
-            padding: 15px;
-            border-radius: 4px;
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+        .data-table th {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .data-table td { color: var(--text-primary); }
+        
+        /* Alert Boxes */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
             margin-bottom: 20px;
         }
-        .footer {
-            background: #f9fafb;
-            padding: 20px;
-            text-align: center;
-            color: #6b7280;
+        .alert-success { background: rgba(72, 187, 120, 0.2); border-left: 4px solid var(--accent-green); }
+        .alert-danger { background: rgba(252, 129, 129, 0.2); border-left: 4px solid var(--accent-red); }
+        .alert-warning { background: rgba(246, 173, 85, 0.2); border-left: 4px solid var(--accent-yellow); }
+        .alert-info { background: rgba(99, 179, 237, 0.2); border-left: 4px solid var(--accent-blue); }
+        
+        /* Risk Categories */
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
         }
-        .footer a { color: #667eea; text-decoration: none; font-weight: 600; }
+        .risk-card {
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .risk-card.low { background: rgba(72, 187, 120, 0.2); border: 2px solid var(--accent-green); }
+        .risk-card.medium { background: rgba(246, 173, 85, 0.2); border: 2px solid var(--accent-yellow); }
+        .risk-card.high { background: rgba(252, 129, 129, 0.2); border: 2px solid var(--accent-red); }
+        .risk-card h4 { margin-bottom: 10px; }
+        .risk-card .percent { font-size: 2.5em; font-weight: bold; }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--bg-tertiary);
+            margin-top: 40px;
+        }
+        .footer a { color: var(--accent-blue); text-decoration: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>💳 Fraud Detection API</h1>
-            <p>Real-time credit card fraud detection using Machine Learning</p>
+    <div class="header">
+        <h1>🛡️ Fraud Detection Dashboard</h1>
+        <div class="header-right">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connected</span>
+            </div>
+            <div class="last-update" id="lastUpdate">Last updated: just now</div>
         </div>
-        <div class="content">
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('monitor')">📊 Live Monitor</button>
+            <button class="tab" onclick="switchTab('shap')">🔍 SHAP Explorer</button>
+            <button class="tab" onclick="switchTab('confidence')">📈 Model Confidence</button>
+            <button class="tab" onclick="switchTab('drift')">🔬 Drift Monitor</button>
+            <button class="tab" onclick="switchTab('retrain')">🔄 Auto Retrain</button>
+        </div>
+        
+        <!-- TAB 1: Live Monitor -->
+        <div id="tab-monitor" class="tab-content active">
             <div class="section">
-                <h2>🎯 Quick Test</h2>
-                <p style="color: #6b7280; margin-bottom: 15px;">Click a button to test with example data:</p>
-                <div class="example-buttons">
-                    <button class="btn btn-success" onclick="loadExample('normal')">✅ Normal Transaction</button>
-                    <button class="btn btn-danger" onclick="loadExample('fraud')">⚠️ Fraudulent Transaction</button>
-                    <button class="btn btn-secondary" onclick="clearInput()">🔄 Clear</button>
+                <h2>Real-Time Monitoring</h2>
+                <p>Auto-refreshes every 10 seconds</p>
+            </div>
+            
+            <div class="metrics-grid" id="metricsGrid">
+                <div class="metric-card">
+                    <label>Total Transactions</label>
+                    <div class="value" id="totalTransactions">-</div>
+                    <div class="delta">Live</div>
+                </div>
+                <div class="metric-card">
+                    <label>Fraud Detected</label>
+                    <div class="value" id="fraudTransactions">-</div>
+                    <div class="delta" id="fraudRate">-</div>
+                </div>
+                <div class="metric-card">
+                    <label>Fraud Rate</label>
+                    <div class="value" id="fraudRatePercent">-</div>
+                    <div class="delta">Current</div>
                 </div>
             </div>
-            <div class="section">
-                <h2>📊 Transaction Features</h2>
-                <div class="info-box">
-                    <p><strong>Note:</strong> This API uses 30 PCA-transformed features from credit card transactions.</p>
-                    <p>Paste your feature array below (comma-separated) or use the example buttons above.</p>
+            
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Fraud Probability Over Transactions</h3>
+                    <div id="chartLine" style="height: 300px;"></div>
                 </div>
-                <textarea id="features" placeholder="Example: -1.36, -0.07, 2.54, ..."></textarea>
+                <div class="chart-card">
+                    <h3>Fraud vs Normal Distribution</h3>
+                    <div id="chartPie" style="height: 300px;"></div>
+                </div>
             </div>
+            
+            <div class="chart-card">
+                <h3>Recent Transactions</h3>
+                <table class="data-table" id="recentTable">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Risk Score</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- TAB 2: SHAP Explorer -->
+        <div id="tab-shap" class="tab-content">
             <div class="section">
-                <button class="btn btn-primary" onclick="predictFraud()" style="width: 100%; font-size: 1.1em;">🔍 Detect Fraud</button>
+                <h2>🔍 SHAP Feature Explainer</h2>
+                <p>Understand which features contribute most to fraud detection</p>
             </div>
-            <div class="loading" id="loading">
+            
+            <div class="example-buttons">
+                <button class="btn btn-danger" onclick="loadExample('fraud')">🔴 Load Fraud Example</button>
+                <button class="btn btn-success" onclick="loadExample('normal')">🟢 Load Normal Example</button>
+                <button class="btn btn-secondary" onclick="clearInput()">🔄 Clear</button>
+            </div>
+            
+            <textarea id="features" placeholder="Enter 30 comma-separated feature values (Time, V1-V28, Amount)..."></textarea>
+            
+            <div style="margin-top: 15px;">
+                <button class="btn btn-primary" onclick="analyzeSHAP()" style="width: 100%;">🔍 Analyze Transaction</button>
+            </div>
+            
+            <div class="loading" id="shapLoading">
                 <div class="spinner"></div>
                 <p>Analyzing transaction...</p>
             </div>
-            <div class="result" id="result"></div>
+            
+            <div id="shapResult"></div>
         </div>
+        
+        <!-- TAB 3: Model Confidence -->
+        <div id="tab-confidence" class="tab-content">
+            <div class="section">
+                <h2>📈 Model Confidence Analysis</h2>
+                <p>Distribution of fraud probability scores across all predictions</p>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Distribution of Fraud Probability Scores</h3>
+                <div id="chartHistogram" style="height: 350px;"></div>
+            </div>
+            
+            <div class="section" style="margin-top: 30px;">
+                <h3>Risk Category Breakdown</h3>
+                <div class="risk-grid" id="riskGrid">
+                    <div class="risk-card low">
+                        <h4>🟢 Low Risk</h4>
+                        <div class="percent" id="lowRiskPct">-</div>
+                        <p style="color: var(--text-secondary);">(0 - 0.3 probability)</p>
+                        <p id="lowRiskCount">- transactions</p>
+                    </div>
+                    <div class="risk-card medium">
+                        <h4>🟡 Medium Risk</h4>
+                        <div class="percent" id="medRiskPct">-</div>
+                        <p style="color: var(--text-secondary);">(0.3 - 0.7 probability)</p>
+                        <p id="medRiskCount">- transactions</p>
+                    </div>
+                    <div class="risk-card high">
+                        <h4>🔴 High Risk</h4>
+                        <div class="percent" id="highRiskPct">-</div>
+                        <p style="color: var(--text-secondary);">(0.7 - 1.0 probability)</p>
+                        <p id="highRiskCount">- transactions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TAB 4: Drift Monitor -->
+        <div id="tab-drift" class="tab-content">
+            <div class="section">
+                <h2>🔬 Data Drift Detection</h2>
+                <p>Monitor for distribution changes between training and production data</p>
+            </div>
+            
+            <button class="btn btn-primary" onclick="runDriftCheck()" style="width: 100%; margin-bottom: 20px;">🔬 Run Drift Check</button>
+            
+            <div class="loading" id="driftLoading">
+                <div class="spinner"></div>
+                <p>Analyzing data distribution...</p>
+            </div>
+            
+            <div id="driftResult"></div>
+            
+            <div class="chart-card" style="margin-top: 30px;">
+                <h3>Drift Score Over Time</h3>
+                <div id="chartDrift" style="height: 350px;"></div>
+            </div>
+        </div>
+        
+        <!-- TAB 5: Auto Retrain -->
+        <div id="tab-retrain" class="tab-content">
+            <div class="section">
+                <h2>🔄 Automated Model Retraining</h2>
+                <p>Monitor model health and trigger retraining when needed</p>
+            </div>
+            
+            <div class="section">
+                <h3>Current Model Health</h3>
+                <div class="metrics-grid" id="modelMetrics">
+                    <div class="metric-card"><label>Accuracy</label><div class="value" id="metricAcc">-</div></div>
+                    <div class="metric-card"><label>Precision</label><div class="value" id="metricPrec">-</div></div>
+                    <div class="metric-card"><label>Recall</label><div class="value" id="metricRec">-</div></div>
+                    <div class="metric-card"><label>F1 Score</label><div class="value" id="metricF1">-</div></div>
+                    <div class="metric-card"><label>ROC-AUC</label><div class="value" id="metricROC">-</div></div>
+                </div>
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>ℹ️ Info:</strong> Retraining compares new model vs current. Only promotes if new model wins on F1 score.
+            </div>
+            
+            <button class="btn btn-primary" onclick="triggerRetrain()" id="retrainBtn" style="width: 100%; margin-bottom: 20px;">🚀 Trigger Retraining</button>
+            
+            <div class="loading" id="retrainLoading">
+                <div class="spinner"></div>
+                <p>Training new model... this may take 2-5 minutes</p>
+            </div>
+            
+            <div id="retrainResult"></div>
+            
+            <div class="section" style="margin-top: 30px;">
+                <h3>Retraining History</h3>
+                <table class="data-table" id="retrainTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Status</th>
+                            <th>Drift Score</th>
+                            <th>F1 (Current)</th>
+                            <th>F1 (New)</th>
+                            <th>Promoted</th>
+                        </tr>
+                    </thead>
+                    <tbody id="retrainTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
         <div class="footer">
-            <p>Built with FastAPI + XGBoost | <a href="/docs" target="_blank">API Documentation</a></p>
+            <p>Built with FastAPI + XGBoost + Plotly.js | <a href="/docs" target="_blank">API Documentation</a></p>
             <p style="margin-top: 10px;"><a href="https://github.com/Midhun-12345678/Fraud-Detection-Application-" target="_blank">View on GitHub</a></p>
         </div>
     </div>
+    
     <script>
+        // === CONSTANTS ===
         const examples = {
-                fraud: [406.0, -2.3122265423263, 1.95199201064158, -1.60985073229769, 3.9979055875468, -0.522187864667764, -1.42654531920595, -2.53738730624579, 1.39165724829804, -2.77008927719433, -2.77227214465915, 3.20203320709635, -2.89990738849473, -0.595221881324605, -4.28925378244217, 0.389724120274487, -1.14074717980657, -2.83005567450437, -0.0168224681808257, 0.416955705037907, 0.126910559061474, 0.517232370861764, -0.0350493686052974, -0.465211076182388, 0.320198198514526, 0.0445191674731724, 0.177839798284401, 0.261145002567677, -0.143275874698919, 0.0],
-
+            fraud: [406.0, -2.3122265423263, 1.95199201064158, -1.60985073229769, 3.9979055875468, -0.522187864667764, -1.42654531920595, -2.53738730624579, 1.39165724829804, -2.77008927719433, -2.77227214465915, 3.20203320709635, -2.89990738849473, -0.595221881324605, -4.28925378244217, 0.389724120274487, -1.14074717980657, -2.83005567450437, -0.0168224681808257, 0.416955705037907, 0.126910559061474, 0.517232370861764, -0.0350493686052974, -0.465211076182388, 0.320198198514526, 0.0445191674731724, 0.177839798284401, 0.261145002567677, -0.143275874698919, 0.0],
             normal: [0.0, -1.3598071336738, -0.0727811733098497, 2.53634673796914, 1.37815522427443, -0.338320769942518, 0.462387777762292, 0.239598554061257, 0.0986979012610507, 0.363786969611213, 0.0907941719789316, -0.551599533260813, -0.617800855762348, -0.991389847235408, -0.311169353699879, 1.46817697209427, -0.470400525259478, 0.207971241929242, 0.0257905801985591, 0.403992960255733, 0.251412098239705, -0.018306777944153, 0.277837575558899, -0.110473910188767, 0.0669280749146731, 0.128539358273528, -0.189114843888824, 0.133558376740387, -0.0210530534538215, 149.62]
         };
+        
+        const plotLayout = {
+            paper_bgcolor: 'rgba(30,33,48,1)',
+            plot_bgcolor: 'rgba(30,33,48,1)',
+            font: { color: '#a0aec0' },
+            margin: { t: 30, r: 20, b: 40, l: 50 }
+        };
+        
+        let lastUpdateTime = Date.now();
+        let historyData = [];
+        
+        // === TAB SWITCHING ===
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Load data for specific tabs
+            if (tabName === 'confidence') loadConfidenceData();
+            if (tabName === 'drift') loadDriftHistory();
+            if (tabName === 'retrain') loadRetrainData();
+        }
+        
+        // === DASHBOARD DATA ===
+        async function loadDashboard() {
+            try {
+                const [dashRes, histRes] = await Promise.all([
+                    fetch('/dashboard'),
+                    fetch('/history')
+                ]);
+                
+                if (!dashRes.ok || !histRes.ok) throw new Error('API Error');
+                
+                const dashboard = await dashRes.json();
+                historyData = await histRes.json();
+                
+                // Update metrics
+                document.getElementById('totalTransactions').textContent = dashboard.total_transactions.toLocaleString();
+                document.getElementById('fraudTransactions').textContent = dashboard.fraud_transactions.toLocaleString();
+                document.getElementById('fraudRate').textContent = `${dashboard.fraud_rate_percent}% rate`;
+                document.getElementById('fraudRatePercent').textContent = `${dashboard.fraud_rate_percent}%`;
+                
+                // Update charts
+                updateLineChart(historyData);
+                updatePieChart(historyData);
+                updateRecentTable(historyData);
+                
+                // Update status
+                document.getElementById('statusDot').classList.remove('error');
+                document.getElementById('statusText').textContent = 'Connected';
+                lastUpdateTime = Date.now();
+                
+            } catch (e) {
+                document.getElementById('statusDot').classList.add('error');
+                document.getElementById('statusText').textContent = 'Disconnected';
+            }
+        }
+        
+        function updateLineChart(data) {
+            if (!data.length) return;
+            const trace = {
+                x: data.map(d => d.id),
+                y: data.map(d => d.fraud_probability),
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#63b3ed', width: 2 },
+                marker: { size: 6 }
+            };
+            Plotly.newPlot('chartLine', [trace], {
+                ...plotLayout,
+                xaxis: { title: 'Transaction ID', gridcolor: '#2d3748' },
+                yaxis: { title: 'Fraud Probability', gridcolor: '#2d3748', range: [0, 1] }
+            }, { responsive: true });
+        }
+        
+        function updatePieChart(data) {
+            if (!data.length) return;
+            const fraudCount = data.filter(d => d.is_fraud).length;
+            const normalCount = data.length - fraudCount;
+            const trace = {
+                values: [normalCount, fraudCount],
+                labels: ['Normal', 'Fraud'],
+                type: 'pie',
+                marker: { colors: ['#48bb78', '#fc8181'] },
+                textinfo: 'label+percent',
+                textfont: { color: '#fff' }
+            };
+            Plotly.newPlot('chartPie', [trace], plotLayout, { responsive: true });
+        }
+        
+        function updateRecentTable(data) {
+            const tbody = document.getElementById('recentTableBody');
+            tbody.innerHTML = data.slice(0, 10).map(d => `
+                <tr>
+                    <td>#${d.id}</td>
+                    <td>${d.fraud_score}/100</td>
+                    <td style="color: ${d.is_fraud ? '#fc8181' : '#48bb78'}">${d.is_fraud ? '🔴 FRAUD' : '🟢 NORMAL'}</td>
+                    <td>${d.created_at || '-'}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // === SHAP EXPLORER ===
         function loadExample(type) {
             document.getElementById('features').value = examples[type].join(', ');
-            document.getElementById('result').style.display = 'none';
+            document.getElementById('shapResult').innerHTML = '';
         }
+        
         function clearInput() {
             document.getElementById('features').value = '';
-            document.getElementById('result').style.display = 'none';
+            document.getElementById('shapResult').innerHTML = '';
         }
-        async function predictFraud() {
-            const featuresText = document.getElementById('features').value.trim();
-            if (!featuresText) { alert('Please enter transaction features or click an example button!'); return; }
-            const features = featuresText.split(',').map(f => parseFloat(f.trim()));
-            if (features.length !== 30) { alert(`Expected 30 features, got ${features.length}.`); return; }
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('result').style.display = 'none';
+        
+        async function analyzeSHAP() {
+            const text = document.getElementById('features').value.trim();
+            if (!text) { alert('Please enter features or load an example'); return; }
+            
+            const features = text.split(',').map(f => parseFloat(f.trim()));
+            if (features.length !== 30) { alert(`Expected 30 features, got ${features.length}`); return; }
+            
+            document.getElementById('shapLoading').style.display = 'block';
+            document.getElementById('shapResult').innerHTML = '';
+            
             try {
-                const response = await fetch('/predict-json', {
+                const res = await fetch('/predict-json', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ features })
                 });
-                const data = await response.json();
-                document.getElementById('loading').style.display = 'none';
-                displayResult(data);
-            } catch (error) {
-                document.getElementById('loading').style.display = 'none';
-                alert('Error: ' + error.message);
+                const data = await res.json();
+                document.getElementById('shapLoading').style.display = 'none';
+                displaySHAPResult(data);
+            } catch (e) {
+                document.getElementById('shapLoading').style.display = 'none';
+                alert('Error: ' + e.message);
             }
         }
-        function displayResult(data) {
-            const resultDiv = document.getElementById('result');
+        
+        function displaySHAPResult(data) {
             const isFraud = data.is_fraud;
-            resultDiv.className = 'result ' + (isFraud ? 'danger' : 'success');
-            const emoji = isFraud ? '⚠️' : '✅';
-            const status = isFraud ? 'FRAUDULENT TRANSACTION DETECTED!' : 'Transaction Appears Legitimate';
-            const statusColor = isFraud ? '#dc2626' : '#10b981';
-            resultDiv.innerHTML = `
-                <h3 style="color: ${statusColor}">${emoji} ${status}</h3>
-                <div class="result-details">
-                    <div class="result-item"><label>Fraud Probability</label><div class="value">${(data.fraud_probability * 100).toFixed(4)}%</div></div>
-                    <div class="result-item"><label>Fraud Score</label><div class="value">${data.fraud_score}/100</div></div>
-                    <div class="result-item"><label>Classification</label><div class="value">${data.prediction === 1 ? 'Fraud' : 'Normal'}</div></div>
+            const resultDiv = document.getElementById('shapResult');
+            
+            let html = `
+                <div class="result-box ${isFraud ? 'danger' : 'success'}">
+                    <h3>${isFraud ? '🚨 FRAUD DETECTED' : '✅ NORMAL TRANSACTION'}</h3>
+                    <p>${isFraud ? 'This transaction shows high fraud indicators' : 'This transaction appears legitimate'}</p>
+                    <div class="metrics-grid" style="margin-top: 20px;">
+                        <div class="metric-card"><label>Fraud Probability</label><div class="value">${data.fraud_probability.toFixed(4)}</div></div>
+                        <div class="metric-card"><label>Fraud Score</label><div class="value">${data.fraud_score}/100</div></div>
+                    </div>
                 </div>
-                ${isFraud ? '<p style="margin-top: 15px; color: #dc2626;"><strong>Action Required:</strong> Flag for manual review.</p>' : '<p style="margin-top: 15px; color: #10b981;"><strong>Status:</strong> Transaction can proceed normally.</p>'}
             `;
-            resultDiv.style.display = 'block';
+            
+            if (data.top_features && data.top_features.length) {
+                html += `<div class="chart-card" style="margin-top: 20px;"><h3>Top Contributing Features</h3><div id="chartSHAP" style="height: 300px;"></div></div>`;
+                resultDiv.innerHTML = html;
+                
+                const sorted = [...data.top_features].sort((a, b) => Math.abs(a.shap_value) - Math.abs(b.shap_value));
+                const trace = {
+                    y: sorted.map(f => f.feature),
+                    x: sorted.map(f => f.shap_value),
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { color: sorted.map(f => f.shap_value > 0 ? '#fc8181' : '#63b3ed') }
+                };
+                Plotly.newPlot('chartSHAP', [trace], {
+                    ...plotLayout,
+                    xaxis: { title: 'SHAP Value', gridcolor: '#2d3748' },
+                    yaxis: { gridcolor: '#2d3748' }
+                }, { responsive: true });
+            } else {
+                resultDiv.innerHTML = html;
+            }
         }
+        
+        // === MODEL CONFIDENCE ===
+        function loadConfidenceData() {
+            if (!historyData.length) return;
+            
+            // Histogram
+            const trace = {
+                x: historyData.map(d => d.fraud_probability),
+                type: 'histogram',
+                nbinsx: 20,
+                marker: { color: '#63b3ed' }
+            };
+            Plotly.newPlot('chartHistogram', [trace], {
+                ...plotLayout,
+                xaxis: { title: 'Fraud Probability', gridcolor: '#2d3748' },
+                yaxis: { title: 'Count', gridcolor: '#2d3748' }
+            }, { responsive: true });
+            
+            // Risk categories
+            const total = historyData.length;
+            const low = historyData.filter(d => d.fraud_probability <= 0.3).length;
+            const med = historyData.filter(d => d.fraud_probability > 0.3 && d.fraud_probability <= 0.7).length;
+            const high = historyData.filter(d => d.fraud_probability > 0.7).length;
+            
+            document.getElementById('lowRiskPct').textContent = `${(low/total*100).toFixed(1)}%`;
+            document.getElementById('lowRiskCount').textContent = `${low} transactions`;
+            document.getElementById('medRiskPct').textContent = `${(med/total*100).toFixed(1)}%`;
+            document.getElementById('medRiskCount').textContent = `${med} transactions`;
+            document.getElementById('highRiskPct').textContent = `${(high/total*100).toFixed(1)}%`;
+            document.getElementById('highRiskCount').textContent = `${high} transactions`;
+        }
+        
+        // === DRIFT MONITOR ===
+        async function runDriftCheck() {
+            document.getElementById('driftLoading').style.display = 'block';
+            document.getElementById('driftResult').innerHTML = '';
+            
+            try {
+                const res = await fetch('/drift', { timeout: 30000 });
+                const data = await res.json();
+                document.getElementById('driftLoading').style.display = 'none';
+                displayDriftResult(data);
+                loadDriftHistory();
+            } catch (e) {
+                document.getElementById('driftLoading').style.display = 'none';
+                document.getElementById('driftResult').innerHTML = `<div class="alert alert-danger">Drift check failed: ${e.message}</div>`;
+            }
+        }
+        
+        function displayDriftResult(data) {
+            let alertClass = data.alert ? 'danger' : 'success';
+            let message = data.alert ? '⚠️ DATA DRIFT DETECTED — Consider retraining the model' : '✅ Data distribution is stable — No action needed';
+            
+            if (data.error) {
+                alertClass = 'warning';
+                message = `⚠️ ${data.error}`;
+            }
+            
+            document.getElementById('driftResult').innerHTML = `
+                <div class="alert alert-${alertClass}">${message}</div>
+                <div class="metrics-grid">
+                    <div class="metric-card"><label>Drift Score</label><div class="value">${(data.drift_score * 100).toFixed(1)}%</div></div>
+                    <div class="metric-card"><label>Drifted Features</label><div class="value">${data.n_drifted_features || 0} / 30</div></div>
+                    <div class="metric-card"><label>Status</label><div class="value">${data.alert ? '🔴 ALERT' : '🟢 STABLE'}</div></div>
+                </div>
+                ${data.drifted_features?.length ? `<div class="alert alert-warning" style="margin-top: 20px;">Drifted Features: ${data.drifted_features.join(', ')}</div>` : ''}
+            `;
+        }
+        
+        async function loadDriftHistory() {
+            try {
+                const res = await fetch('/drift/history');
+                const data = await res.json();
+                
+                if (data.length) {
+                    const trace = {
+                        x: data.map(d => d.timestamp),
+                        y: data.map(d => d.drift_score),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#63b3ed', width: 2 },
+                        marker: { size: 8 }
+                    };
+                    
+                    const threshold = {
+                        x: [data[0].timestamp, data[data.length-1].timestamp],
+                        y: [0.3, 0.3],
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#fc8181', dash: 'dash', width: 2 },
+                        name: 'Alert Threshold'
+                    };
+                    
+                    Plotly.newPlot('chartDrift', [trace, threshold], {
+                        ...plotLayout,
+                        xaxis: { title: 'Timestamp', gridcolor: '#2d3748' },
+                        yaxis: { title: 'Drift Score', gridcolor: '#2d3748', range: [0, 1] },
+                        showlegend: true
+                    }, { responsive: true });
+                }
+            } catch (e) {
+                console.log('No drift history yet');
+            }
+        }
+        
+        // === AUTO RETRAIN ===
+        async function loadRetrainData() {
+            // Current metrics
+            try {
+                const res = await fetch('/retrain/current-metrics');
+                const data = await res.json();
+                if (!data.error) {
+                    document.getElementById('metricAcc').textContent = `${(data.accuracy * 100).toFixed(2)}%`;
+                    document.getElementById('metricPrec').textContent = `${(data.precision * 100).toFixed(2)}%`;
+                    document.getElementById('metricRec').textContent = `${(data.recall * 100).toFixed(2)}%`;
+                    document.getElementById('metricF1').textContent = `${(data.f1 * 100).toFixed(2)}%`;
+                    document.getElementById('metricROC').textContent = `${(data.roc_auc * 100).toFixed(2)}%`;
+                }
+            } catch (e) {}
+            
+            // History
+            try {
+                const res = await fetch('/retrain/status');
+                const data = await res.json();
+                const tbody = document.getElementById('retrainTableBody');
+                
+                if (data.length) {
+                    tbody.innerHTML = data.slice(-5).reverse().map(d => {
+                        const statusIcon = { promoted: '🟢', rejected: '🟡', skipped: '⚪', error: '🔴' }[d.status] || '';
+                        const currF1 = d.current_metrics?.f1 ? d.current_metrics.f1.toFixed(4) : '-';
+                        const newF1 = d.new_metrics?.f1 ? d.new_metrics.f1.toFixed(4) : '-';
+                        return `
+                            <tr>
+                                <td>${(d.timestamp || '').slice(0, 19)}</td>
+                                <td>${statusIcon} ${d.status}</td>
+                                <td>${((d.drift_score || 0) * 100).toFixed(1)}%</td>
+                                <td>${currF1}</td>
+                                <td>${newF1}</td>
+                                <td>${d.promoted ? '✅' : '❌'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No retraining history yet</td></tr>';
+                }
+            } catch (e) {}
+        }
+        
+        async function triggerRetrain() {
+            document.getElementById('retrainBtn').disabled = true;
+            document.getElementById('retrainLoading').style.display = 'block';
+            document.getElementById('retrainResult').innerHTML = '';
+            
+            try {
+                const res = await fetch('/retrain', { method: 'POST' });
+                const data = await res.json();
+                document.getElementById('retrainLoading').style.display = 'none';
+                document.getElementById('retrainBtn').disabled = false;
+                displayRetrainResult(data);
+                loadRetrainData();
+            } catch (e) {
+                document.getElementById('retrainLoading').style.display = 'none';
+                document.getElementById('retrainBtn').disabled = false;
+                document.getElementById('retrainResult').innerHTML = `<div class="alert alert-danger">Retraining failed: ${e.message}</div>`;
+            }
+        }
+        
+        function displayRetrainResult(data) {
+            const statusMap = {
+                promoted: { class: 'success', msg: '✅ New model promoted! F1 score improved.' },
+                rejected: { class: 'warning', msg: '⚠️ New model rejected — current model performs better.' },
+                skipped: { class: 'info', msg: `ℹ️ Retraining skipped — ${data.reason || 'model is healthy'}` }
+            };
+            const status = statusMap[data.status] || { class: 'danger', msg: `❌ Error: ${data.reason || 'Unknown'}` };
+            
+            let html = `<div class="alert alert-${status.class}">${status.msg}</div>`;
+            
+            if (data.new_metrics && data.current_metrics) {
+                html += `
+                    <table class="data-table" style="margin-top: 20px;">
+                        <thead><tr><th>Metric</th><th>Current</th><th>New Model</th><th>Winner</th></tr></thead>
+                        <tbody>
+                            ${['accuracy', 'precision', 'recall', 'f1', 'roc_auc'].map(m => {
+                                const curr = data.current_metrics[m];
+                                const newV = data.new_metrics[m];
+                                const winner = newV > curr ? '🏆 New' : (curr > newV ? '🏆 Current' : 'Tie');
+                                return `<tr><td>${m.toUpperCase()}</td><td>${curr.toFixed(4)}</td><td>${newV.toFixed(4)}</td><td>${winner}</td></tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+            
+            if (data.training_duration_seconds) {
+                html += `<p style="margin-top: 15px; color: var(--text-secondary);">Training completed in ${data.training_duration_seconds.toFixed(1)} seconds</p>`;
+            }
+            
+            document.getElementById('retrainResult').innerHTML = html;
+        }
+        
+        // === UPDATE TIMER ===
+        function updateTimer() {
+            const seconds = Math.floor((Date.now() - lastUpdateTime) / 1000);
+            document.getElementById('lastUpdate').textContent = `Last updated: ${seconds}s ago`;
+        }
+        
+        // === INIT ===
+        loadDashboard();
+        setInterval(loadDashboard, 10000); // Refresh every 10s
+        setInterval(updateTimer, 1000);
     </script>
+</body>
+</html>
 </body>
 </html>
